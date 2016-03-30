@@ -1,7 +1,8 @@
 require 'spec_helper'
 
 describe 'file_line_match' do
-  let(:msg) { 'expected one match attribute for file_line resource' }
+  let(:msg_missing) { 'expected one match attribute for file_line resource' }
+  let(:msg_wrong) { 'match attribute for file_line doesn\'t match line' }
 
   context 'with fix disabled' do
     context 'code with missing match attribute' do
@@ -22,7 +23,7 @@ describe 'file_line_match' do
       end
 
       it 'should create a warning' do
-        expect(problems).to contain_warning(msg).on_line(8).in_column(31)
+        expect(problems).to contain_warning(msg_missing).on_line(8).in_column(31)
       end
     end
     context 'code with duplicate match attribute' do
@@ -39,7 +40,23 @@ describe 'file_line_match' do
       end
 
       it 'should create a warning' do
-        expect(problems).to contain_warning(msg).on_line(2).in_column(31)
+        expect(problems).to contain_warning(msg_missing).on_line(2).in_column(31)
+      end
+    end
+    context 'code with unmatching attribute' do
+      let(:code) { "
+      file_line { 'sudo_rule':
+        path => '/etc/sudoers',
+        line => '%sudo ALL=(ALL) ALL',
+        match  => '^sodu',
+      }" }
+
+      it 'should detect a single problem' do
+        expect(problems).to have(1).problem
+      end
+
+      it 'should create a warning' do
+        expect(problems).to contain_warning(msg_wrong).on_line(2).in_column(31)
       end
     end
 
